@@ -1,0 +1,54 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage[none]{hyphenat}
+\usepackage[a4paper, total={6in, 8in}]{geometry}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{bbm}
+\usepackage{amsthm}
+\usepackage{indentfirst}
+\usepackage{mathdots}
+\usepackage{algorithm}
+\usepackage{algpseudocodex}
+\usepackage{parskip}
+\newenvironment{solution}
+    {\renewcommand\qedsymbol{$\blacksquare$}\begin{proof}[Solution]}
+    {\end{proof}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\I}{\mathbb{I}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\rank}{\operatorname{rank}}
+\newcommand{\height}{\operatorname{height}}
+
+\begin{document}
+
+\setlength{\parindent}{0mm}
+
+\section*{Entropy and Information Theory}
+
+\textbf{Definition (Extrinsically):} LMs' embedded performance on other tasks.
+
+\textbf{Definition (Intrinsically):} How accurately LMs predict language.
+
+\textbf{Information:}
+\[S(x) = \log_2\frac{1}{p(x)}=-\log_2 p(x).\]
+
+\textbf{Entropy:}
+\[H(X) = \sum_{x} p(x) \log_2\frac{1}{p(x)} = -\sum_x p(x) \log_2 p(x).\]
+
+Entropy is a lower bound on the average number of bits necessary to encode \(X\).
+
+\textbf{Per-Word Entropy Rate:}
+\[H_{\operatorname{{rate}}}(X) = \lim_{{N\ra \infty}}\frac{1}{N} H(X_1,\cdots, X_N)\leq \log_2 V.\]
+
+\textbf{Joint Entropy:}
+\[H(X,Y) = -\sum_x \sum_y p(x,y) \log_2 p(x,y) = H(X) + H(Y) - I(X;Y).\]
+
+\textbf{Conditional Entropy:}
+\[H(Y|X) = \sum_{x\in X} p(x) H(Y|X=x).\]
+
+\textbf{Mutual Information:}
+\[I(X;Y) = H(X) - H(X|Y) = H(Y) - H(Y|X) = \sum_{x,y}p(x,y) \log_2\frac{p(x,y)}{p(x)p(y)}.\]
+
+\end{document}
