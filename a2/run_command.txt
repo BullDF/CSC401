@@ -1,0 +1,15 @@
+
+srun -p csc401 --pty \
+    python3 a2_main.py train \
+        model_test.pt \
+        --tiny-preset \
+        --source-lang f \
+        --encoder-num-hidden-layers 2 \
+        --word-embedding-size 20 \
+        --transformer-ff-size 31 \
+        --with-post-layer-norm \
+        --batch-size 5 \
+        --gradient-accumulation 2 \
+        --skip-eval 0 \
+        --epochs 2 \
+        --device cpu
