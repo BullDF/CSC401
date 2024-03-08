@@ -15,7 +15,6 @@ Copyright (c) 2024 University of Toronto
 import math
 import torch
 import torch.nn as nn
-import time
 
 class LayerNorm(nn.Module):
     def __init__(self, num_features, eps=1e-6):
@@ -761,10 +760,10 @@ class TransformerEncoderDecoder(nn.Module):
         """
         src_x = self.get_src_embeddings(src)
         encoder_output = self.encoder(src_x, self.create_pad_mask(src))
-
+        device = src.device
         batch_size, _ = src.shape
 
-        input_seq = torch.full((batch_size, 1), target_sos)
+        input_seq = torch.full((batch_size, 1), target_sos).to(device)
 
         for _ in range(max_len):
             input_seq_x = self.get_tgt_embeddings(input_seq)
@@ -775,6 +774,9 @@ class TransformerEncoderDecoder(nn.Module):
             next_token = torch.argmax(logits, dim=2, keepdim=True)[:, -1, :]
             
             input_seq = self.concatenate_generation_sequence(input_seq, next_token)
+
+            if self.all_finished(input_seq, target_eos, max_len):
+                break
 
         tgt = self.pad_generation_sequence(input_seq, target_eos)
         return tgt
@@ -855,22 +857,25 @@ class TransformerEncoderDecoder(nn.Module):
                 torch.Tensor, [batch_size * k, 1, src_seq_len], the expanded encoder mask
         """
         batch_size, _ = src.shape
-        encoder_output = self.encoder(src, self.create_pad_mask(src))
-        input_seq = torch.full((batch_size, 1), target_sos)
-        log_probs = self.decoder(input_seq,
+        device = src.device
+        src_x = self.get_src_embeddings(src)
+        encoder_output = self.encoder(src_x, self.create_pad_mask(src))
+        input_seq = torch.full((batch_size, 1), target_sos).to(device)
+        input_seq_x = self.get_tgt_embeddings(input_seq)
+        log_probs = self.decoder(input_seq_x,
                                  self.create_pad_mask(input_seq),
                                  encoder_output,
-                                 self.create_pad_mask(encoder_output),
+                                 self.create_pad_mask(src),
                                  True)
 
         log_probs[:, :, target_eos] = float('-inf')
-        log_probs = log_probs.unsqueeze(1)
+        log_probs = log_probs.squeeze(1)
 
         top_k_tokens = torch.topk(log_probs, k, 1).indices
         assert top_k_tokens.shape == torch.Size([batch_size, k])
 
         top_k_tokens = top_k_tokens.reshape((batch_size * k, 1))
-        input_seq = input_seq.expand(batch_size * k, 1)
+        input_seq = input_seq.expand(batch_size, k, 1).reshape((batch_size * k, 1))
         beam = self.concatenate_generation_sequence(input_seq, top_k_tokens)
         assert beam.shape == torch.Size([batch_size * k, 2])
 
@@ -904,11 +909,11 @@ class TransformerEncoderDecoder(nn.Module):
                 torch.Tensor, [...., seq_len], the log probabilities of the sequences
                 torch.Tensor, [...], the summed scores of the sequences
         """
-        padded_token_seq = self.pad_generation_sequence(tgt_generation, target_eos)
-        padded_log_probs = self.pad_generation_sequence(seq_log_probs, self.padding_idx)
-        sum_scores = torch.sum(padded_log_probs, -1)
+        # padded_token_seq = self.pad_generation_sequence(tgt_generation, target_eos)
+        # padded_log_probs = self.pad_generation_sequence(seq_log_probs, self.padding_idx)
+        sum_scores = torch.sum(seq_log_probs, -1)
 
-        return padded_token_seq, padded_log_probs, sum_scores
+        return tgt_generation, seq_log_probs, sum_scores
 
     def finalize_beams_for_beam_search(self, top_beams, device):
         """
@@ -919,9 +924,9 @@ class TransformerEncoderDecoder(nn.Module):
         device: torch.device, the device to put the tensor on
         return: torch.Tensor, [batch_size, max_seq_len]
         """
-        batch_size = len(top_beams)
-        for i in range(batch_size):
-            top_beams[i] = self.pad_generation_sequence(top_beams[i], self.padding_idx)
+        # batch_size = len(top_beams)
+        # for i in range(batch_size):
+        top_beams = self.pad_generation_sequence(top_beams, self.padding_idx)
 
         beams = torch.Tensor(top_beams)
         beams = beams.to(device)

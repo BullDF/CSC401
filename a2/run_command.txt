@@ -13,3 +13,14 @@ srun -p csc401 --pty \
         --skip-eval 0 \
         --epochs 2 \
         --device cpu
+
+srun -p csc401 --gres gpu \
+    python3 -u a2_main.py train \
+    transformer_model.pt \
+    --skip-eval 0 \
+    --device cuda
+
+srun -p csc401 --gres gpu \
+    python3 -u a2_main.py test \
+    transformer_model.pt \
+    --device cuda

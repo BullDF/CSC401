@@ -13,7 +13,6 @@ All of the files in this directory and all subdirectories are:
 Copyright (c) 2024 University of Toronto
 """
 import math
-import time
 
 """
 Calculate BLEU score for one reference and one hypothesis

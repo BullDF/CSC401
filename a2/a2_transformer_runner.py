@@ -275,7 +275,7 @@ class TransformerRunner:
         assert inputs.shape == torch.Size([batch_size, (seq_len - 1)])
         assert training_targets.shape == torch.Size([batch_size * (seq_len - 1)])
 
-        return torch.LongTensor(inputs), torch.LongTensor(training_targets)
+        return inputs, training_targets
 
     @staticmethod
     def train_step_optimizer_and_scheduler(
@@ -329,7 +329,7 @@ class TransformerRunner:
         total_loss = 0.0
         num_iter = 0
 
-        for source, source_lens, targets in dataloader:
+        for source, source_lens, targets in tqdm(dataloader, desc='Epoch'):
             num_iter += 1
             source = source.to(device)
             source_lens = source_lens.to(device)
@@ -338,7 +338,8 @@ class TransformerRunner:
             inputs, training_targets = self.train_input_target_split(targets)
 
             logits = self.model(source, inputs)
-            loss = criterion(logits.reshape((-1, 100)), training_targets)
+            
+            loss = criterion(logits.reshape((-1, self.tgt_vocab_size)), training_targets)
             total_loss += loss.item()
             loss.backward()
 
@@ -350,7 +351,7 @@ class TransformerRunner:
         if accum_count != 0:
             self.train_step_optimizer_and_scheduler(optimizer, scheduler)
 
-        return total_loss, num_iter
+        return total_loss / num_iter, num_iter
 
     def test(self, dataloader, n_gram_levels: tuple[int, ...] = (4, 3)):
         self.load_model()
