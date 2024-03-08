@@ -15,7 +15,7 @@ Copyright (c) 2024 University of Toronto
 import math
 import torch
 import torch.nn as nn
-
+import time
 
 class LayerNorm(nn.Module):
     def __init__(self, num_features, eps=1e-6):
@@ -122,7 +122,7 @@ class MultiHeadAttention(nn.Module):
         # shape [batch_size, num_heads, query_seq_len, key_seq_len]
         attn_scores = (query @ key.transpose(2, 3)) / (d_k ** 0.5)
 
-        if mask:
+        if mask is not None:
             # shape [batch_size, num_heads, query_seq_len, key_seq_len]
             attn_scores = attn_scores * mask.unsqueeze(1)
 
@@ -212,11 +212,11 @@ class FeedForwardLayer(nn.Module):
 
         batch_size, seq_len, d_model = x.shape
 
-        h1 = x @ self.w_1
+        h1 = self.w_1(x)
         z1 = self.f(h1)
         d1 = self.dropout1(z1)
 
-        h2 = d1 @ self.w_2
+        h2 = self.w_2(d1)
         d2 = self.dropout2(h2)
 
         assert d2.shape == torch.Size([batch_size, seq_len, d_model])
@@ -653,11 +653,13 @@ class TransformerEncoderDecoder(nn.Module):
         normalize_logits: bool, whether to apply log_softmax to the logits
         return: torch.Tensor, [batch_size, tgt_seq_len, tgt_vocab_size] of logits or log probabilities
         """
-        encoder_output = self.encoder(src, self.create_pad_mask(src))
-        decoder_output = self.decoder(tgt,
+        src_x = self.get_src_embeddings(src)
+        tgt_x = self.get_tgt_embeddings(tgt)
+        encoder_output = self.encoder(src_x, self.create_pad_mask(src))
+        decoder_output = self.decoder(tgt_x,
                                       self.create_pad_mask(tgt),
                                       encoder_output,
-                                      self.create_pad_mask(encoder_output),
+                                      self.create_pad_mask(src),
                                       normalize_logits)
 
         return decoder_output
@@ -757,18 +759,21 @@ class TransformerEncoderDecoder(nn.Module):
             Such that each sequence is padded with the padding token after the end of sequence token (if it exists)
             Hint: use the pad_generation_sequence function
         """
-        encoder_output = self.encoder(src, self.create_pad_mask(src))
+        src_x = self.get_src_embeddings(src)
+        encoder_output = self.encoder(src_x, self.create_pad_mask(src))
 
         batch_size, _ = src.shape
 
         input_seq = torch.full((batch_size, 1), target_sos)
 
         for _ in range(max_len):
-            logits = self.decoder(input_seq,
+            input_seq_x = self.get_tgt_embeddings(input_seq)
+            logits = self.decoder(input_seq_x,
                                   self.create_pad_mask(input_seq),
                                   encoder_output,
-                                  self.create_pad_mask(encoder_output))
-            next_token = torch.argmax(logits, dim=2).unsqueeze(1)
+                                  self.create_pad_mask(src))
+            next_token = torch.argmax(logits, dim=2, keepdim=True)[:, -1, :]
+            
             input_seq = self.concatenate_generation_sequence(input_seq, next_token)
 
         tgt = self.pad_generation_sequence(input_seq, target_eos)

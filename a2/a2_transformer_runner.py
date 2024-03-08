@@ -272,7 +272,7 @@ class TransformerRunner:
         inputs = target_tokens[:, :-1]
         training_targets = target_tokens[:, 1:].reshape((batch_size * (seq_len - 1))).contiguous()
 
-        assert inputs.shape == torch.Size([batch_size, seq_len])
+        assert inputs.shape == torch.Size([batch_size, (seq_len - 1)])
         assert training_targets.shape == torch.Size([batch_size * (seq_len - 1)])
 
         return torch.LongTensor(inputs), torch.LongTensor(training_targets)
@@ -337,8 +337,8 @@ class TransformerRunner:
 
             inputs, training_targets = self.train_input_target_split(targets)
 
-            logits = self.model(inputs)
-            loss = criterion(logits, training_targets)
+            logits = self.model(source, inputs)
+            loss = criterion(logits.reshape((-1, 100)), training_targets)
             total_loss += loss.item()
             loss.backward()
 
@@ -452,7 +452,10 @@ class TransformerRunner:
         return: list summed BLEU score at each level for batch, batch_size
         """
         def remove_idx(t: torch.Tensor, sos_idx: int, eos_idx: int, pad_idx: int) -> torch.Tensor:
-            mask = t != sos_idx and t != eos_idx and t != pad_idx
+            mask1 = t != sos_idx
+            mask2 = t != eos_idx
+            mask3 = t != pad_idx
+            mask = mask1 * mask2 * mask3
             return t[mask]
 
         batch_size, _ = target_y_cand.shape
