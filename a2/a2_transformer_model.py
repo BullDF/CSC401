@@ -15,6 +15,8 @@ Copyright (c) 2024 University of Toronto
 import math
 import torch
 import torch.nn as nn
+import time
+from tqdm import tqdm
 
 class LayerNorm(nn.Module):
     def __init__(self, num_features, eps=1e-6):
@@ -123,7 +125,7 @@ class MultiHeadAttention(nn.Module):
 
         if mask is not None:
             # shape [batch_size, num_heads, query_seq_len, key_seq_len]
-            attn_scores = attn_scores * mask.unsqueeze(1)
+            attn_scores = attn_scores + mask.unsqueeze(1) * (-1e9)
 
         self.set_attention_scores(attn_scores)
 
@@ -654,11 +656,14 @@ class TransformerEncoderDecoder(nn.Module):
         """
         src_x = self.get_src_embeddings(src)
         tgt_x = self.get_tgt_embeddings(tgt)
-        encoder_output = self.encoder(src_x, self.create_pad_mask(src))
+        encoder_mask = self.create_pad_mask(src)
+        decoder_mask = self.create_pad_mask(tgt) | self.create_causal_mask(tgt)
+
+        encoder_output = self.encoder(src_x, encoder_mask)
         decoder_output = self.decoder(tgt_x,
-                                      self.create_pad_mask(tgt),
+                                      decoder_mask,
                                       encoder_output,
-                                      self.create_pad_mask(src),
+                                      encoder_mask,
                                       normalize_logits)
 
         return decoder_output
@@ -698,9 +703,8 @@ class TransformerEncoderDecoder(nn.Module):
         next_token: torch.Tensor, [batch_size, 1]
         return: torch.Tensor, [batch_size, seq_len + 1]
         """
-        result = torch.concat((tgt_generation, next_token), dim=1)
-        batch_size, seq_len = tgt_generation.shape
-        assert result.shape == torch.Size([batch_size, seq_len + 1])
+        result = torch.concat((tgt_generation, next_token), dim=-1)
+
         return result
 
     def pad_generation_sequence(self, tgt_generation, target_eos):
@@ -759,20 +763,19 @@ class TransformerEncoderDecoder(nn.Module):
             Hint: use the pad_generation_sequence function
         """
         src_x = self.get_src_embeddings(src)
-        encoder_output = self.encoder(src_x, self.create_pad_mask(src))
-        device = src.device
-        batch_size, _ = src.shape
+        encoder_mask = self.create_pad_mask(src)
+        encoder_output = self.encoder(src_x, encoder_mask)
 
-        input_seq = torch.full((batch_size, 1), target_sos).to(device)
-
+        input_seq = self.initialize_generation_sequence(src, target_sos)
+        
         for _ in range(max_len):
             input_seq_x = self.get_tgt_embeddings(input_seq)
+            decoder_mask = self.create_pad_mask(input_seq) | self.create_causal_mask(input_seq)
             logits = self.decoder(input_seq_x,
-                                  self.create_pad_mask(input_seq),
+                                  decoder_mask,
                                   encoder_output,
-                                  self.create_pad_mask(src))
+                                  encoder_mask)
             next_token = torch.argmax(logits, dim=2, keepdim=True)[:, -1, :]
-            
             input_seq = self.concatenate_generation_sequence(input_seq, next_token)
 
             if self.all_finished(input_seq, target_eos, max_len):
@@ -794,8 +797,8 @@ class TransformerEncoderDecoder(nn.Module):
         return: torch.Tensor, [batch_size * k, src_seq_len, d_model], [batch_size * k, 1, src_seq_len]
         """
         batch_size, src_seq_len, d_model = src_x.shape
-        exp_src_x = src_x.expand(batch_size * k, src_seq_len, d_model)
-        exp_src_mask = src_mask.expand(batch_size * k, 1, src_seq_len)
+        exp_src_x = src_x.unsqueeze(1).expand(-1, k, -1, -1).reshape((batch_size * k, src_seq_len, d_model))
+        exp_src_mask = src_mask.expand(-1, k, -1).reshape((batch_size * k, 1, src_seq_len))
 
         assert exp_src_x.shape == torch.Size([batch_size * k, src_seq_len, d_model])
         assert exp_src_mask.shape == torch.Size([batch_size * k, 1, src_seq_len])
@@ -815,7 +818,7 @@ class TransformerEncoderDecoder(nn.Module):
         return: torch.Tensor, [batch_size, k * expan, cur_len]
         """
         _, cur_len = t.shape
-        result = t.expand(batch_size * k, expan, cur_len)
+        result = t.unsqueeze(1).expand(batch_size * k, expan, cur_len)
         assert result.shape == torch.Size([batch_size * k, expan, cur_len])
 
         result = result.reshape((batch_size, k * expan, cur_len))
@@ -870,23 +873,25 @@ class TransformerEncoderDecoder(nn.Module):
 
         log_probs[:, :, target_eos] = float('-inf')
         log_probs = log_probs.squeeze(1)
+        _, vocab_size = log_probs.shape
 
         top_k_tokens = torch.topk(log_probs, k, 1).indices
         assert top_k_tokens.shape == torch.Size([batch_size, k])
 
         top_k_tokens = top_k_tokens.reshape((batch_size * k, 1))
-        input_seq = input_seq.expand(batch_size, k, 1).reshape((batch_size * k, 1))
+        input_seq = input_seq.unsqueeze(1).expand(-1, k, -1).reshape((batch_size * k, 1))
         beam = self.concatenate_generation_sequence(input_seq, top_k_tokens)
         assert beam.shape == torch.Size([batch_size * k, 2])
 
-        sos_log_probs = torch.zeros((batch_size * k, 1))
-        top_k_log_probs = log_probs[top_k_tokens].reshape((batch_size * k, 1))
+        sos_log_probs = torch.zeros((batch_size * k, 1)).to(device)
+
+        top_k_log_probs = log_probs.unsqueeze(1).expand(-1, k, -1).reshape((batch_size * k, vocab_size)).gather(1, top_k_tokens)
         beam_log_probs = self.concatenate_generation_sequence(sos_log_probs, top_k_log_probs)
         assert beam_log_probs.shape == torch.Size([batch_size * k, 2])
 
         exp_encoder_output, exp_encoder_output_mask = self.expand_encoder_for_beam_search(encoder_output,
                                                                                           self.create_pad_mask(
-                                                                                              encoder_output),
+                                                                                              src),
                                                                                           k)
 
         return beam, beam_log_probs, exp_encoder_output, exp_encoder_output_mask
@@ -924,12 +929,16 @@ class TransformerEncoderDecoder(nn.Module):
         device: torch.device, the device to put the tensor on
         return: torch.Tensor, [batch_size, max_seq_len]
         """
-        # batch_size = len(top_beams)
-        # for i in range(batch_size):
-        top_beams = self.pad_generation_sequence(top_beams, self.padding_idx)
+        batch_size = len(top_beams)
+        max_len = 0
+        for seq in top_beams:
+            max_len = max(max_len, seq.shape[0])
 
-        beams = torch.Tensor(top_beams)
-        beams = beams.to(device)
+        beams = torch.full((batch_size, max_len), 0).to(device)
+        for i in range(batch_size):
+            seq_len_i = top_beams[i].shape[0]
+            beams[i, :seq_len_i] = top_beams[i]
+        beams = self.pad_generation_sequence(beams, self.padding_idx)
 
         return beams
 

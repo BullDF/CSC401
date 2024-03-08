@@ -13,6 +13,7 @@ All of the files in this directory and all subdirectories are:
 Copyright (c) 2024 University of Toronto
 """
 import math
+import time
 
 """
 Calculate BLEU score for one reference and one hypothesis
@@ -71,16 +72,13 @@ def n_gram_precision(
         The n-gram precision. In the case that the candidate has length 0,
         `p_n` is 0.
     """
-
     reference_n_grams = grouper(reference, n)
     candidate_n_grams = grouper(candidate, n)
     count = 0
     total = len(candidate_n_grams)
     for cand_n_gram in candidate_n_grams:
-        for ref_n_gram in reference_n_grams:
-            if list(cand_n_gram) == list(ref_n_gram):
-                count += 1
-                break
+        if cand_n_gram in reference_n_grams:
+            count += 1
 
     return count / total if total != 0 else 0
 

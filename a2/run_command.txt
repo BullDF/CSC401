@@ -7,12 +7,14 @@ srun -p csc401 --pty \
         --encoder-num-hidden-layers 2 \
         --word-embedding-size 20 \
         --transformer-ff-size 31 \
-        --with-post-layer-norm \
         --batch-size 5 \
         --gradient-accumulation 2 \
+        --with-post-layer-norm \
         --skip-eval 0 \
         --epochs 2 \
         --device cpu
+
+        
 
 srun -p csc401 --gres gpu \
     python3 -u a2_main.py train \

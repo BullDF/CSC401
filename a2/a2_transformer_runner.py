@@ -341,6 +341,7 @@ class TransformerRunner:
             
             loss = criterion(logits.reshape((-1, self.tgt_vocab_size)), training_targets)
             total_loss += loss.item()
+            loss = loss / accum_iter
             loss.backward()
 
             accum_count += 1
@@ -409,8 +410,17 @@ class TransformerRunner:
 
         # === Your Code Here === #
         # Step 1: Tokenize the input sentence.
+        tokens = self.dataset.tokenize(input_sentence)
+
         # Step 2: Convert tokens into ordinal IDs.
-        assert False, "Fill me"
+        source_tokens = []
+        for token in tokens:
+            if token in self.dataset.source_word2id:
+                source_tokens.append(self.dataset.source_word2id[token])
+            else:
+                source_tokens.append(self.dataset.source_unk_id)
+
+        source_tokens = torch.LongTensor(source_tokens).unsqueeze(0).to(self.opts.device)
         # === ============== === #
 
         # Step 3. Feed the tokenized sentence into the model.
@@ -423,7 +433,14 @@ class TransformerRunner:
 
         # === Your Code Here === #
         # Step 4. Decode the output of the sentence into a string.
-        assert False, "Fill me"
+        decoded = []
+        for id in hypotheses[0]:
+            if id.item() in [sos_idx, eos_idx]:
+                pass
+            elif id.item() in self.dataset.target_id2word:
+                decoded.append(self.dataset.target_id2word[id.item()])
+        translation = ' '.join(decoded)
+        return translation
         # === ============== === #
 
     @staticmethod
@@ -452,22 +469,22 @@ class TransformerRunner:
 
         return: list summed BLEU score at each level for batch, batch_size
         """
-        def remove_idx(t: torch.Tensor, sos_idx: int, eos_idx: int, pad_idx: int) -> torch.Tensor:
-            mask1 = t != sos_idx
-            mask2 = t != eos_idx
-            mask3 = t != pad_idx
-            mask = mask1 * mask2 * mask3
-            return t[mask]
+        # def remove_idx(t: torch.Tensor, sos_idx: int, eos_idx: int, pad_idx: int) -> torch.Tensor:
+        #     mask1 = t != sos_idx
+        #     mask2 = t != eos_idx
+        #     mask3 = t != pad_idx
+        #     mask = mask1 * mask2 * mask3
+        #     return t[mask]
 
         batch_size, _ = target_y_cand.shape
-        bleu_scores = []
-        for n in n_gram_levels:
-            bleu_score = 0.0
-            for i in range(batch_size):
-                ref = remove_idx(target_y_ref[i], sos_idx, eos_idx, pad_idx)
-                cand = remove_idx(target_y_cand[i], sos_idx, eos_idx, pad_idx)
-                bleu_score += bleu_score_func(ref, cand, n)
-            bleu_scores.append(bleu_score)
+        bleu_scores = [0.0 for _ in n_gram_levels]
+        special_tokens = [sos_idx, eos_idx, pad_idx]
+        
+        for i in range(batch_size):
+            ref = [token for token in target_y_ref[i].tolist() if token not in special_tokens]
+            cand = [token for token in target_y_cand[i].tolist() if token not in special_tokens]
+            for idx, n in enumerate(n_gram_levels):
+                bleu_scores[idx] += bleu_score_func(ref, cand, n)
 
         return tuple(bleu_scores), batch_size
 
