@@ -41,10 +41,10 @@
 
 \title{CSC401 Homework Assignment \#2\\Analysis}
 
-\author{Firstname Lastname \\
-  Student number: \texttt{123456} \\
-  UTORid: \texttt{abcdef} \\
-  \texttt{name@mail.utoronto.ca}}
+\author{Yuwei (Johnny) Meng \\
+  Student number: \texttt{1007824810} \\
+  UTORid: \texttt{mengyuwe} \\
+  \texttt{johnny.meng@mail.utoronto.ca}}
 
 \begin{document}
 \maketitle
@@ -52,50 +52,54 @@
 \section{Training Results}
 
 \subsection{Training Loop Printout}
-Place your training loop printout in this section. The numbers shown are for illustration purposes only and the loss and BLEU values presented are fabricated.
 
 \paragraph{Model with Pre-layer Normalization}
 \begin{small}
 \begin{verbatim}
-[Device:cuda] Epoch 1 Training ====
-Forward Step:      1/  2171 | Accumulation Step:   0 | Loss:   97.88 | Learning Rate: 8.5e-80
-Forward Step:    201/  2171 | Accumulation Step:  10 | Loss:   32.59 | Learning Rate: 9.4e-23
-...
+  [Device:cuda] Epoch 1 Training ====
+  Epoch: 100% 2171/2171 [01:56<00:00, 18.69it/s]
+  [Device:cuda] Epoch 1 Validation ====
+  Epoch 1: loss=6.246624596598839, BLEU-4: 15.9045 BLEU-3: 18.9850, time=00:02:32
+  [Device:cuda] Epoch 2 Training ====
+  Epoch: 100% 2171/2171 [01:58<00:00, 18.30it/s]
+  [Device:cuda] Epoch 2 Validation ====
+  Epoch 2: loss=2.6125431804819517, BLEU-4: 32.3820 BLEU-3: 38.9379, time=00:05:00
+  [Device:cuda] Epoch 3 Training ====
+  Epoch: 100% 2171/2171 [01:58<00:00, 18.29it/s]
+  [Device:cuda] Epoch 3 Validation ====
+  Epoch 3: loss=1.8071209433330253, BLEU-4: 34.4108 BLEU-3: 41.2555, time=00:07:29
+  [Device:cuda] Epoch 4 Training ====
+  Epoch: 100% 2171/2171 [01:58<00:00, 18.27it/s]
+  [Device:cuda] Epoch 4 Validation ====
+  Epoch 4: loss=1.4453762439141786, BLEU-4: 35.5304 BLEU-3: 42.1599, time=00:09:56
+  [Device:cuda] Epoch 5 Training ====
+  Epoch: 100% 2171/2171 [01:58<00:00, 18.40it/s]
+  [Device:cuda] Epoch 5 Validation ====
+  Epoch 5: loss=1.1869039849332268, BLEU-4: 36.1735 BLEU-3: 42.8110, time=00:12:23
+  [Device:cuda] Epoch 6 Training ====
+  Epoch: 100% 2171/2171 [01:58<00:00, 18.36it/s]
+  [Device:cuda] Epoch 6 Validation ====
+  Epoch 6: loss=0.9999292358611928, BLEU-4: 36.3233 BLEU-3: 42.9580, time=00:14:53
+  [Device:cuda] Epoch 7 Training ====
+  Epoch: 100% 2171/2171 [01:58<00:00, 18.38it/s]
+  [Device:cuda] Epoch 7 Validation ====
+  Epoch 7: loss=0.8557376364638102, BLEU-4: 36.7024 BLEU-3: 43.2409, time=00:17:22
+  Finished 7 epochs
 \end{verbatim}
 \end{small}
 
 \vspace{2em}
 
-Alternatively, you can depict the WandB graphs as shown in figure \ref{fig:train_bleu_wo_attention} \& \ref{fig:train_loss_wo_attention}. The numbers shown are for illustration purposes only and the loss and BLEU values presented are fabricated. You should expect very different outcomes.  We recommend exporting your charts as {\tt .png} files following this tutorial: \url{https://wandb.ai/site/articles/export-data-from-wb}.
-
-\begin{figure}[hbt!]
-\centering
-\includegraphics[width=0.65\linewidth]{./wandb_bleu.png}
-\caption{Wandb Training BLEU Score for Model with Pre-layer Normalization}
-\label{fig:train_bleu_wo_attention}
-\end{figure}
-
-\begin{figure}[hbt!]
-\centering
-\includegraphics[width=0.65\linewidth]{./wandb_loss.png}
-\caption{Wandb Training Loss for Model with Pre-layer Normalization}
-\label{fig:train_loss_wo_attention}
-\end{figure}
-
-\paragraph{Model with Post-layer Normalization}
-
-
 \subsection{Test Set BLEU Score}
-This section lists the test set BLEU score reported on the test set for each model in table \ref{tab:bleu}.
+
 \begin{table}[h]
 \centering
 \begin{tabular}{lcc} \toprule
 Model                          & BLEU-4 &  BLEU-3 \\ \midrule
-Model Pre-layer Normalization  & 0.0    \\
-Model Post-layer Normalization & 0.0    \\
+Model Pre-layer Normalization  & 41.9362 & 48.9238 \\
 \bottomrule
 \end{tabular}
-\caption{The BLEU score reported on the test set for each model.}
+\caption{The BLEU score reported on the test set for the pre-layer model.}
 \label{tab:bleu}
 \end{table}
 
@@ -103,7 +107,56 @@ Model Post-layer Normalization & 0.0    \\
 
 \subsection{Translations}
 
-List all of your translations in this section.
+\begin{enumerate}
+  \item Voila des mesures qui favorisent la famille canadienne.
+  \begin{enumerate}
+    \item \textbf{My Model:} these measures promote canadian family
+    \item \textbf{Bart:} These are measures that favour the Canadian family.
+    \item \textbf{Google Translate:} These are measures that favor the Canadian family.
+  \end{enumerate}
+  \item Je voudrais aussi signaler aux deputes qu'ils peuvent maintenant s'avancer pour voter.
+  \begin{enumerate}
+    \item \textbf{My Model:} i would also like to point out that they can move to vote
+    \item \textbf{Bart:} I also want to tell members that they can now vote.
+    \item \textbf{Google Translate:} I would also like to point out to members that they can now come forward to vote.
+  \end{enumerate}
+  \item Trudeau embauche un cabinet de consultants pour examiner la dependance excessive du gouvernement a l'egard des cabinets de consultants.
+  \begin{enumerate}
+    \item \textbf{My Model:} trudeau s office to review consultants look at the government s excessive dependency
+    \item \textbf{Bart:} Trudeau is creating a consulting cabinet to look at the excessive dependence of the government on
+    \item \textbf{Google Translate:} Trudeau hires consulting firm to examine government's overreliance on consulting firms.
+  \end{enumerate}
+  \item Pierre demande s'il vous plait s'il peut s'attribuer le merite d'avoir supprime 600 emplois a la SRC.
+  \begin{enumerate}
+    \item \textbf{My Model:} pierre s please take the credit
+    \item \textbf{Bart:} Pierre asks if you would support the merit of removing 600 jobs from the RCMP.
+    \item \textbf{Google Translate:} Pierre please asks if he can take credit for cutting 600 jobs at the SRC.
+  \end{enumerate}
+  \item La France a remporte la coupe du monde 2018.
+  \begin{enumerate}
+    \item \textbf{My Model:} france has won the world s cuts
+    \item \textbf{Bart:} France won the world in 2018.
+    \item \textbf{Google Translate:} France won the 2018 World Cup.
+  \end{enumerate}
+  \item J'avais a peine de l'eau a boire pour huit jours.
+  \begin{enumerate}
+    \item \textbf{My Model:} i barely had a drink for eight days
+    \item \textbf{Bart:} I had enough water for eight days.
+    \item \textbf{Google Translate:} I barely had water to drink for eight days.
+  \end{enumerate}
+  \item Toronto est une ville du Canada.
+  \begin{enumerate}
+    \item \textbf{My Model:} toronto is a city of canada
+    \item \textbf{Bart:} Toronto is a city of Canada.
+    \item \textbf{Google Translate:} Toronto is a city in Canada.
+  \end{enumerate}
+  \item Les etudiants de l'Universite de Toronto sont excellents.
+  \begin{enumerate}
+    \item \textbf{My Model:} the university of toronto is excellent
+    \item \textbf{Bart:} The students at the University of Toronto are excellent.
+    \item \textbf{Google Translate:} The students at the University of Toronto are excellent.
+  \end{enumerate}
+\end{enumerate}
 
 \subsection{Discussion}
 {\it In this section, write a brief discussion on your findings. Describe the quality of
