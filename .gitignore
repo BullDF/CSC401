@@ -1,3 +1,4 @@
 .DS_Store
 a2/__pycache__/
 a2/transformer_model.pt
+a2/.idea/

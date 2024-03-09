@@ -272,9 +272,6 @@ class TransformerRunner:
         inputs = target_tokens[:, :-1]
         training_targets = target_tokens[:, 1:].reshape((batch_size * (seq_len - 1))).contiguous()
 
-        assert inputs.shape == torch.Size([batch_size, (seq_len - 1)])
-        assert training_targets.shape == torch.Size([batch_size * (seq_len - 1)])
-
         return inputs, training_targets
 
     @staticmethod
