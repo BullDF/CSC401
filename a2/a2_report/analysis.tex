@@ -162,4 +162,12 @@ Model Pre-layer Normalization  & 41.9362 & 48.9238 \\
 {\it In this section, write a brief discussion on your findings. Describe the quality of
 those sentences. How's your model compared with Google Translate or ChatGPT?}
 
+Overall, I take the translations by Google Translate as the ground truth and hence I would classify the translations by Google Translate as having very high quality. Comparing with Google Translate, I think my pre-layer norm transformer actually does a pretty good job as it basically captures the overall meaning of a sentence. As we can see in the translations above, my transformer does capture some of the most important keywords in the sentences, aside from having some minor grammatical issues. I would say my model performs comparatively with the Bart model.
+
+With that being said, I think many factors determine a good translation. The most important ones are: 1) whether the translation contains the keywords; 2) whether the translation captures the theme of the meaning (i.e. political, casual, etc.); 3) whether the translation makes sense.
+
+I think my transformer does a good job on all three aspects mentioned above. We can see that my model basically outputs a similar meaning as Google Translate in sentences 1, 2, 6, and 7, in between which sentence 7 is exactly the same as Google Translate. In sentence 6, my transformer actually outperforms the Bart model as Bart outputs an opposite meaning. However, my transformer does miss some keywords in sentences 3, 5, and 8, and translation 4 is completely nonsense. In summary, I think the model does distinguish between political and casual sentences and is capable of capturing some keywords, but it struggles on long, complicated sentences, like sentences 3 and 4.
+
+For the Bart model, I would say the same problem persists. In sentence 3, Bart doesn't output a complete translation due to the original sentence being too long, and the translation for sentence 4 is inaccurate. Other than that, the Bart model performs quite well.
+
 \end{document}
