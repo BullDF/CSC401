@@ -96,7 +96,7 @@ def log_b_m_x(x, myTheta, m=None):
         (single row for specific m): if x.shape == [d] and m is not None, then
             return value is float (or equivalent)
         (single row for all m): if x.shape == [d] and m is None, then
-            return shape is [T]
+            return shape is [M]
         (vectorized for all M) if x.shape == [T, d] and m is None, then
             return shape is [M, T]
 

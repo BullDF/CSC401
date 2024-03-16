@@ -151,7 +151,7 @@ def Levenshtein(r, h):
     >>> wer("who is there".split(), "".split())
     1.0 0 3 0
     >>> wer("".split(), "who is there".split())
-    Inf 0 0 3
+    Inf 3 0 0
     """
 
     # U: length of reference;
