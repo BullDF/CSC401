@@ -1,7 +1,8 @@
-from sklearn.model_selection import train_test_split
-import numpy as np
-import os, fnmatch
+import fnmatch
+import os
 import random
+
+import numpy as np
 
 dataDir = "/u/cs401/A3/data/"
 
@@ -83,7 +84,7 @@ class theta:
         self.Sigma = Sigma
 
 
-def log_b_m_x(x, myTheta, m=None):
+def log_b_m_x(x, myTheta: theta, m=None):
     """
     Returns the log probability of d-dimensional vector x using only
         component m of model myTheta (See equation 1 of the handout)
@@ -117,16 +118,24 @@ def log_b_m_x(x, myTheta, m=None):
     """
     d = x.shape[-1]
     # Single Row for specific m (log_bmx in [1])
-    if len(x.shape) == 1 and m != None:
-        print("TODO")
+    if len(x.shape) == 1 and m is not None:
+        log_bmx = 0
     # Single Row for all m (log_bmx in [M])
     elif len(x.shape) == 1:
-        print("TODO")
+        M = myTheta.mu.shape[0]
+        log_bmx = np.zeros(M)
+        for i in range(M):
+            log_bmx[i] = log_b_m_x(x, myTheta, i)
     # Vectorized (log_bmx in [M, T])
     else:
-        print("TODO")
+        M = myTheta.mu.shape[0]
+        T = x.shape[0]
+        log_bmx = np.zeros((T, M))
+        for t in range(T):
+            log_bmx[t] = log_b_m_x(x[t], myTheta)
+        log_bmx = log_bmx.T
 
-    #return log_bmx
+    return log_bmx
 
 def log_p_m_x(log_Bs, myTheta):
     """
