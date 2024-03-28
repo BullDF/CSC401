@@ -28,7 +28,10 @@ class theta:
         This should output a float or equivalent (array of size [1] etc.)
         NOTE: use this in `log_b_m_x` below
         """
-        print("TODO")
+        first = np.sum((self.mu[m, :] ** 2) / (2 * self.Sigma[m, :] ** 2))
+        second = self._d / 2 * np.log(2 * np.pi)
+        third = 1 / 2 * np.log(np.prod(self.Sigma[m, :] ** 2))
+        return first + second + third
 
     def reset_omega(self, omega):
         """
@@ -117,23 +120,35 @@ def log_b_m_x(x, myTheta: theta, m=None):
     log_bmx : log probability of d-dimensional vector x (See equation 1 of the handout)
     """
     d = x.shape[-1]
+
     # Single Row for specific m (log_bmx in [1])
     if len(x.shape) == 1 and m is not None:
-        log_bmx = 0
+        precomputed = myTheta.precomputedForM(m)
+        first = 1 / 2 * (x ** 2) * (myTheta.Sigma[m, :] ** -2)
+        second = myTheta.mu * x * (myTheta.Sigma[m, :] ** -2)
+        log_bmx = 0.0 - np.sum(first - second) - precomputed
+
     # Single Row for all m (log_bmx in [M])
     elif len(x.shape) == 1:
         M = myTheta.mu.shape[0]
-        log_bmx = np.zeros(M)
+        precomputed = np.zeros(M)
         for i in range(M):
-            log_bmx[i] = log_b_m_x(x, myTheta, i)
+            precomputed[i] = myTheta.precomputedForM(i)
+
+        first = 1 / 2 * (myTheta.Sigma ** -2) @ (x ** 2)
+        second = (myTheta.mu * (myTheta.Sigma ** -2)) @ x
+        log_bmx = 0.0 - (first - second) - precomputed
+
     # Vectorized (log_bmx in [M, T])
     else:
         M = myTheta.mu.shape[0]
-        T = x.shape[0]
-        log_bmx = np.zeros((T, M))
-        for t in range(T):
-            log_bmx[t] = log_b_m_x(x[t], myTheta)
-        log_bmx = log_bmx.T
+        precomputed = np.zeros(M)
+        for i in range(M):
+            precomputed[i] = myTheta.precomputedForM(i)
+
+        first = 1 / 2 * (myTheta.Sigma ** -2) @ (x.T ** 2)
+        second = (myTheta.mu * (myTheta.Sigma ** -2)) @ x.T
+        log_bmx = 0.0 - (first - second) - precomputed
 
     return log_bmx
 
