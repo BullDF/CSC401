@@ -5,7 +5,8 @@ import random
 import numpy as np
 
 from scipy.special import logsumexp
-
+from typing import List
+import time
 dataDir = "/u/cs401/A3/data/"
 
 
@@ -152,7 +153,7 @@ def log_b_m_x(x: np.ndarray, myTheta: theta, m=None) -> np.ndarray:
 
         first = 1 / 2 * (myTheta.Sigma ** -2) @ (x.T ** 2)
         second = (myTheta.mu * (myTheta.Sigma ** -2)) @ x.T
-        log_bmx = 0.0 - (first - second) - precomputed
+        log_bmx = 0.0 - (first - second) - precomputed.reshape((-1, 1))
         T = x.shape[0]
         assert log_bmx.shape == (M, T)
 
@@ -181,7 +182,7 @@ def log_p_m_x(log_Bs: np.ndarray, myTheta: theta) -> np.ndarray:
     -------
     log_Ps : the matrix of log probabilities i.e. log of p(m|X;theta)
     """
-    M, T = log_Bs
+    M, T = log_Bs.shape
     log_omega = np.log(myTheta.omega)
     numerator = log_omega + log_Bs
     denominator = logsumexp(log_omega + log_Bs, axis=0)
@@ -214,7 +215,6 @@ def logLik(log_Bs: np.ndarray, myTheta: theta) -> float:
     """
     M, T = log_Bs.shape
     log_Ps = logsumexp(np.log(myTheta.omega) + log_Bs, axis=0)
-    assert log_Ps.shape == (1, T)
     log_Lik = np.sum(log_Ps)
     assert isinstance(log_Lik, float)
     return log_Lik
@@ -224,10 +224,12 @@ def update_parameters(myTheta: theta, X: np.ndarray) -> float:
     log_Ps = log_p_m_x(log_Bs, myTheta)
     L = logLik(log_Bs, myTheta)
     T = log_Bs.shape[1]
+    print(log_Ps)
+    time.sleep(10)
     Ps = np.exp(log_Ps)
     new_omega = np.sum(Ps, axis=1) / T
-    new_mu = (Ps @ X) / np.sum(Ps, axis=1)
-    new_Sigma = (Ps @ (X ** 2)) / np.sum(Ps, axis=1) - new_mu ** 2
+    new_mu = (Ps @ X) / np.sum(Ps, axis=1).reshape((-1, 1))
+    new_Sigma = (Ps @ (X ** 2)) / np.sum(Ps, axis=1).reshape((-1, 1)) - new_mu ** 2
     myTheta.reset_omega(new_omega)
     myTheta.reset_mu(new_mu)
     myTheta.reset_Sigma(new_Sigma)
@@ -260,7 +262,7 @@ def train(speaker, X: np.ndarray, M=8, epsilon=0.0, maxIter=20) -> theta:
     return myTheta
 
 
-def test(mfcc, correctID, models, k=5):
+def test(mfcc, correctID: int, models: List[theta], k=5):
     """
     Computes the likelihood of 'mfcc' in each model in 'models', where the correct model is 'correctID'
 
@@ -276,7 +278,27 @@ def test(mfcc, correctID, models, k=5):
     the format of the log likelihood (number of decimal places, or exponent) does not matter
     """
     bestModel = -1
-    print("TODO")
+    log_liks = []
+    prev_best = float('-inf')
+    print(models[correctID].name)
+
+    for i in range(len(models)):
+        model = models[i]
+        log_Bs = log_b_m_x(mfcc, model)
+        log_lik = logLik(log_Bs, model)
+
+        if log_lik > prev_best:
+            bestModel = i
+
+        log_liks.append((log_lik, model.name))
+
+
+    log_liks.sort(reverse=True)
+
+    for i in range(k):
+        print(f'{log_liks[i][1]} {log_liks[i][0]}')
+    time.sleep(5)
+    print()
 
     return 1 if (bestModel == correctID) else 0
 
