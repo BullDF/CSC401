@@ -4,6 +4,8 @@ import random
 
 import numpy as np
 
+from scipy.special import logsumexp
+
 dataDir = "/u/cs401/A3/data/"
 
 
@@ -87,7 +89,7 @@ class theta:
         self.Sigma = Sigma
 
 
-def log_b_m_x(x, myTheta: theta, m=None):
+def log_b_m_x(x: np.ndarray, myTheta: theta, m=None) -> np.ndarray:
     """
     Returns the log probability of d-dimensional vector x using only
         component m of model myTheta (See equation 1 of the handout)
@@ -127,6 +129,7 @@ def log_b_m_x(x, myTheta: theta, m=None):
         first = 1 / 2 * (x ** 2) * (myTheta.Sigma[m, :] ** -2)
         second = myTheta.mu * x * (myTheta.Sigma[m, :] ** -2)
         log_bmx = 0.0 - np.sum(first - second) - precomputed
+        assert isinstance(log_bmx, float)
 
     # Single Row for all m (log_bmx in [M])
     elif len(x.shape) == 1:
@@ -138,6 +141,7 @@ def log_b_m_x(x, myTheta: theta, m=None):
         first = 1 / 2 * (myTheta.Sigma ** -2) @ (x ** 2)
         second = (myTheta.mu * (myTheta.Sigma ** -2)) @ x
         log_bmx = 0.0 - (first - second) - precomputed
+        assert log_bmx.shape == (M,)
 
     # Vectorized (log_bmx in [M, T])
     else:
@@ -149,10 +153,12 @@ def log_b_m_x(x, myTheta: theta, m=None):
         first = 1 / 2 * (myTheta.Sigma ** -2) @ (x.T ** 2)
         second = (myTheta.mu * (myTheta.Sigma ** -2)) @ x.T
         log_bmx = 0.0 - (first - second) - precomputed
+        T = x.shape[0]
+        assert log_bmx.shape == (M, T)
 
     return log_bmx
 
-def log_p_m_x(log_Bs, myTheta):
+def log_p_m_x(log_Bs: np.ndarray, myTheta: theta) -> np.ndarray:
     """
     Returns the matrix of log probabilities i.e. log of p(m|X;theta)
 
@@ -175,10 +181,16 @@ def log_p_m_x(log_Bs, myTheta):
     -------
     log_Ps : the matrix of log probabilities i.e. log of p(m|X;theta)
     """
-    print("TODO")
+    M, T = log_Bs
+    log_omega = np.log(myTheta.omega)
+    numerator = log_omega + log_Bs
+    denominator = logsumexp(log_omega + log_Bs, axis=0)
+    log_Ps = numerator / denominator
+    assert log_Ps.shape == (M, T)
+    return log_Ps
 
 
-def logLik(log_Bs, myTheta):
+def logLik(log_Bs: np.ndarray, myTheta: theta) -> float:
     """
     Return the log likelihood of 'X' using model 'myTheta' and precomputed MxT matrix, 'log_Bs', of log_b_m_x
 
@@ -200,20 +212,50 @@ def logLik(log_Bs, myTheta):
     -------
     log_Lik : the log likelihood (See equation 3 of the handout)
     """
-    print("TODO")
+    M, T = log_Bs.shape
+    log_Ps = logsumexp(np.log(myTheta.omega) + log_Bs, axis=0)
+    assert log_Ps.shape == (1, T)
+    log_Lik = np.sum(log_Ps)
+    assert isinstance(log_Lik, float)
+    return log_Lik
 
+def update_parameters(myTheta: theta, X: np.ndarray) -> float:
+    log_Bs = log_b_m_x(X, myTheta)
+    log_Ps = log_p_m_x(log_Bs, myTheta)
+    L = logLik(log_Bs, myTheta)
+    T = log_Bs.shape[1]
+    Ps = np.exp(log_Ps)
+    new_omega = np.sum(Ps, axis=1) / T
+    new_mu = (Ps @ X) / np.sum(Ps, axis=1)
+    new_Sigma = (Ps @ (X ** 2)) / np.sum(Ps, axis=1) - new_mu ** 2
+    myTheta.reset_omega(new_omega)
+    myTheta.reset_mu(new_mu)
+    myTheta.reset_Sigma(new_Sigma)
 
-def train(speaker, X, M=8, epsilon=0.0, maxIter=20):
+    return L
+
+def train(speaker, X: np.ndarray, M=8, epsilon=0.0, maxIter=20) -> theta:
     """ Train a model for the given speaker. Returns the theta (omega, mu, sigma)"""
-    myTheta = theta(speaker, M, X.shape[1])
+    d = X.shape[1]
+    myTheta = theta(speaker, M, d)
+    
     # perform initialization (Slide 32)
-    print("TODO : Initialization")
+    myTheta.reset_mu(np.random.normal(size=(M, d)))
+    myTheta.reset_Sigma(np.random.normal(size=(M, d)))
+    myTheta.reset_omega(np.full(M, 1 / M))
     # for ex.,
     # myTheta.reset_omega(omegas_with_constraints)
     # myTheta.reset_mu(mu_computed_using_data)
     # myTheta.reset_Sigma(some_appropriate_sigma)
 
-    print("TODO: Rest of training")
+    i = 0
+    prev_L = float('-inf')
+    improvement = float('inf')
+    while i <= maxIter and improvement >= epsilon:
+        L = update_parameters(myTheta, X)
+        improvement = L - prev_L
+        prev_L = L
+        i += 1
 
     return myTheta
 
