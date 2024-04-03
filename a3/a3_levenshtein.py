@@ -136,7 +136,7 @@ def step(u: int, t: int, table: List[List[TableCell]], r: List[str], h: List[str
     return
 
 
-def finalize(table):
+def finalize(table: List[List[TableCell]]):
     """
     finalize: computes the final results, including WER, number of all operations
 
@@ -158,7 +158,7 @@ def finalize(table):
 
     backward = {'match': [0, (1, 1)], 'sub': [0, (1, 1)], 'ins': [0, (0, 1)], 'del': [0, (1, 0)]}
 
-    def trace(u, t):
+    def trace(u: int, t: int) -> None:
         if table[u][t].trace == 'first':
             backward['ins'][0] += t
             backward['del'][0] += u
@@ -166,7 +166,7 @@ def finalize(table):
 
         backward[table[u][t].trace][0] += 1
         du, dt = backward[table[u][t].trace][1]
-        return trace(u - du, t - dt)
+        trace(u - du, t - dt)
 
     trace(U, T)
     insertions = backward['ins'][0]
