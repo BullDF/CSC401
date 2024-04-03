@@ -70,8 +70,17 @@ def initialize(U : int, T : int) -> List[List[TableCell]]:
     """
 
     ############################################
-    table = None
-    print('TODO')
+    table = []
+    for u in range(U + 1):
+        row = []
+        for t in range(T + 1):
+            if u == 0 or t == 0:
+                cell = TableCell(float('inf'))
+            else:
+                cell = TableCell()
+            row.append(cell)
+        table.append(row)
+    table[0][0].cost = 0
     ############################################
 
     # Make sure the type of values are correct
@@ -95,11 +104,25 @@ def step(u : int, t : int, table : List[List[TableCell]], r : List[str], h : Lis
     N/A
     """
     ############################################
-    print('TODO')
+    dist = euclidean(r[u - 1], h[t - 1])
+    diag = table[u - 1][t - 1].cost + dist
+    down = table[u - 1][t].cost + dist
+    right = table[u][t - 1].cost + dist
+
+    table[u][t].cost = min(diag, right, down)
+    if table[u][t].cost == diag:
+        table[u][t].trace_r = u - 1
+        table[u][t].trace_h = t - 1
+    elif table[u][t].cost == right:
+        table[u][t].trace_r = u
+        table[u][t].trace_h = t - 1
+    else:
+        table[u][t].trace_r = u - 1
+        table[u][t].trace_h = t
     ############################################
     return
 
-def finalize(table):
+def finalize(table: List[List[TableCell]]):
     """
     finalize: computes the final results, DTW distance and OWP
 
@@ -112,11 +135,20 @@ def finalize(table):
     (dist, path): (float, list of (int, int)) DTW distance and optimal warping path
     """
     # Define results to be returned:
-    dist = float('inf')
     path = []
 
     ############################################
-    print('TODO')
+    U, T = len(table) - 1, len(table[0]) - 1
+    dist = table[U][T].cost
+
+    def trace(u: int, t: int) -> None:
+        if table[u][t].trace_r is None and table[u][t].trace_h is None:
+            return
+        
+        trace(table[u][t].trace_r, table[u][t].trace_h)
+        path.append((u, t))
+        
+    trace(U, T)
     ############################################
 
     return (dist, path)
