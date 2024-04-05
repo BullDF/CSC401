@@ -1,0 +1,1 @@
+srun -p csc401 --pty python3 train.py --source /u/cs401/A3/data/ --hidden_size <value>
