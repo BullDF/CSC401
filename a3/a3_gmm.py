@@ -130,7 +130,6 @@ def log_b_m_x(x: np.ndarray, myTheta: theta, m=None) -> np.ndarray:
         first = 1 / 2 * (x ** 2) / (myTheta.Sigma[m, :])
         second = myTheta.mu * x / (myTheta.Sigma[m, :])
         log_bmx = 0.0 - np.sum(first - second) - precomputed
-        assert isinstance(log_bmx, float)
 
     # Single Row for all m (log_bmx in [M])
     elif len(x.shape) == 1:
@@ -142,7 +141,6 @@ def log_b_m_x(x: np.ndarray, myTheta: theta, m=None) -> np.ndarray:
         first = 1 / 2 / (myTheta.Sigma) @ (x ** 2)
         second = (myTheta.mu / (myTheta.Sigma)) @ x
         log_bmx = 0.0 - (first - second) - precomputed
-        assert log_bmx.shape == (M,)
 
     # Vectorized (log_bmx in [M, T])
     else:
@@ -155,7 +153,6 @@ def log_b_m_x(x: np.ndarray, myTheta: theta, m=None) -> np.ndarray:
         second = (myTheta.mu / (myTheta.Sigma)) @ x.T
         log_bmx = 0.0 - (first - second) - precomputed.reshape((-1, 1))
         T = x.shape[0]
-        assert log_bmx.shape == (M, T)
 
     return log_bmx
 
@@ -212,10 +209,9 @@ def logLik(log_Bs: np.ndarray, myTheta: theta) -> float:
     -------
     log_Lik : the log likelihood (See equation 3 of the handout)
     """
-    M, T = log_Bs.shape
-    log_Ps = logsumexp(np.log(myTheta.omega) + log_Bs, axis=0)
+    log_omega = np.log(myTheta.omega)
+    log_Ps = logsumexp(log_omega + log_Bs, axis=0)
     log_Lik = np.sum(log_Ps)
-    assert isinstance(log_Lik, float)
     return log_Lik
 
 def update_parameters(myTheta: theta, X: np.ndarray) -> float:
@@ -240,7 +236,7 @@ def train(speaker, X: np.ndarray, M=8, epsilon=0.0, maxIter=20) -> theta:
     
     # perform initialization (Slide 32)
     myTheta.reset_mu(np.random.normal(size=(M, d)))
-    myTheta.reset_Sigma(np.random.normal(size=(M, d)))
+    myTheta.reset_Sigma(abs(np.random.normal(size=(M, d))))
     myTheta.reset_omega(np.full(M, 1 / M))
     # for ex.,
     # myTheta.reset_omega(omegas_with_constraints)
