@@ -31,9 +31,9 @@ class theta:
         This should output a float or equivalent (array of size [1] etc.)
         NOTE: use this in `log_b_m_x` below
         """
-        first = np.sum((self.mu[m, :] ** 2) / (2 * self.Sigma[m, :] ** 2))
+        first = np.sum((self.mu[m, :] ** 2) / (2 * self.Sigma[m, :]))
         second = self._d / 2 * np.log(2 * np.pi)
-        third = 1 / 2 * np.log(np.prod(self.Sigma[m, :] ** 2))
+        third = 1 / 2 * np.log(np.prod(self.Sigma[m, :]))
         return first + second + third
 
     def reset_omega(self, omega):
@@ -127,8 +127,8 @@ def log_b_m_x(x: np.ndarray, myTheta: theta, m=None) -> np.ndarray:
     # Single Row for specific m (log_bmx in [1])
     if len(x.shape) == 1 and m is not None:
         precomputed = myTheta.precomputedForM(m)
-        first = 1 / 2 * (x ** 2) * (myTheta.Sigma[m, :] ** -2)
-        second = myTheta.mu * x * (myTheta.Sigma[m, :] ** -2)
+        first = 1 / 2 * (x ** 2) / (myTheta.Sigma[m, :])
+        second = myTheta.mu * x / (myTheta.Sigma[m, :])
         log_bmx = 0.0 - np.sum(first - second) - precomputed
         assert isinstance(log_bmx, float)
 
@@ -139,8 +139,8 @@ def log_b_m_x(x: np.ndarray, myTheta: theta, m=None) -> np.ndarray:
         for i in range(M):
             precomputed[i] = myTheta.precomputedForM(i)
 
-        first = 1 / 2 * (myTheta.Sigma ** -2) @ (x ** 2)
-        second = (myTheta.mu * (myTheta.Sigma ** -2)) @ x
+        first = 1 / 2 / (myTheta.Sigma) @ (x ** 2)
+        second = (myTheta.mu / (myTheta.Sigma)) @ x
         log_bmx = 0.0 - (first - second) - precomputed
         assert log_bmx.shape == (M,)
 
@@ -151,8 +151,8 @@ def log_b_m_x(x: np.ndarray, myTheta: theta, m=None) -> np.ndarray:
         for i in range(M):
             precomputed[i] = myTheta.precomputedForM(i)
 
-        first = 1 / 2 * (myTheta.Sigma ** -2) @ (x.T ** 2)
-        second = (myTheta.mu * (myTheta.Sigma ** -2)) @ x.T
+        first = 1 / 2 / (myTheta.Sigma) @ (x.T ** 2)
+        second = (myTheta.mu / (myTheta.Sigma)) @ x.T
         log_bmx = 0.0 - (first - second) - precomputed.reshape((-1, 1))
         T = x.shape[0]
         assert log_bmx.shape == (M, T)
@@ -182,12 +182,11 @@ def log_p_m_x(log_Bs: np.ndarray, myTheta: theta) -> np.ndarray:
     -------
     log_Ps : the matrix of log probabilities i.e. log of p(m|X;theta)
     """
-    M, T = log_Bs.shape
+
     log_omega = np.log(myTheta.omega)
-    numerator = log_omega + log_Bs
-    denominator = logsumexp(log_omega + log_Bs, axis=0)
-    log_Ps = numerator / denominator
-    assert log_Ps.shape == (M, T)
+    first = log_omega + log_Bs
+    second = logsumexp(log_omega + log_Bs, axis=0)
+    log_Ps = first - second
     return log_Ps
 
 
@@ -224,8 +223,6 @@ def update_parameters(myTheta: theta, X: np.ndarray) -> float:
     log_Ps = log_p_m_x(log_Bs, myTheta)
     L = logLik(log_Bs, myTheta)
     T = log_Bs.shape[1]
-    print(log_Ps)
-    time.sleep(10)
     Ps = np.exp(log_Ps)
     new_omega = np.sum(Ps, axis=1) / T
     new_mu = (Ps @ X) / np.sum(Ps, axis=1).reshape((-1, 1))
