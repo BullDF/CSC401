@@ -225,7 +225,7 @@ def update_parameters(myTheta: theta, X: np.ndarray) -> float:
     new_Sigma = (Ps @ (X ** 2)) / np.sum(Ps, axis=1).reshape((-1, 1)) - new_mu ** 2
     myTheta.reset_omega(new_omega)
     myTheta.reset_mu(new_mu)
-    myTheta.reset_Sigma(new_Sigma)
+    myTheta.reset_Sigma(new_Sigma + 1e-10)
 
     return L
 
@@ -236,7 +236,7 @@ def train(speaker, X: np.ndarray, M=8, epsilon=0.0, maxIter=20) -> theta:
     
     # perform initialization (Slide 32)
     myTheta.reset_mu(np.random.normal(size=(M, d)))
-    myTheta.reset_Sigma(abs(np.random.normal(size=(M, d))))
+    myTheta.reset_Sigma(np.abs(np.random.normal(size=(M, d))) + 1e-10)
     myTheta.reset_omega(np.full(M, 1 / M))
     # for ex.,
     # myTheta.reset_omega(omegas_with_constraints)
@@ -282,6 +282,7 @@ def test(mfcc, correctID: int, models: List[theta], k=5):
 
         if log_lik > prev_best:
             bestModel = i
+            prev_best = log_lik
 
         log_liks.append((log_lik, model.name))
 
