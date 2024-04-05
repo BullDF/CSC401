@@ -286,7 +286,6 @@ def test(mfcc, correctID: int, models: List[theta], k=5):
 
         log_liks.append((log_lik, model.name))
 
-
     log_liks.sort(reverse=True)
 
     for i in range(k):
