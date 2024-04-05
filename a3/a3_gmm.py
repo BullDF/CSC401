@@ -236,7 +236,7 @@ def train(speaker, X: np.ndarray, M=8, epsilon=0.0, maxIter=20) -> theta:
     
     # perform initialization (Slide 32)
     myTheta.reset_mu(np.random.normal(size=(M, d)))
-    myTheta.reset_Sigma(np.abs(np.random.normal(size=(M, d))) + 1e-10)
+    myTheta.reset_Sigma(np.random.rand(M, d) + 1e-10)
     myTheta.reset_omega(np.full(M, 1 / M))
     # for ex.,
     # myTheta.reset_omega(omegas_with_constraints)
@@ -291,9 +291,8 @@ def test(mfcc, correctID: int, models: List[theta], k=5):
 
     for i in range(k):
         print(f'{log_liks[i][1]} {log_liks[i][0]}')
-    time.sleep(5)
-    print()
 
+    print()
     return 1 if (bestModel == correctID) else 0
 
 
