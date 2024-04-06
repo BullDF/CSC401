@@ -1,0 +1,36 @@
+
+Below is a table showing the experiment on different M values - the number of Gaussian components in the model. For each value of M, I ran 3 trials on it since there is randomness in initializing the means and variances and computed the average test accuracy.
+
+ M | Test Accuracy 1 | Test Accuracy 2 | Test Accuracy 3 | Average 
+---|-----------------|-----------------|-----------------|---------
+ 3 | 0.90625         | 0.9375          | 0.96875         | 0.938
+ 4 | 0.96875         | 0.96875         | 0.9375          | 0.958
+ 5 | 1.0             | 0.96875         | 0.96875         | 0.979
+ 6 | 1.0             | 0.96875         | 1.0             | 0.990
+ 7 | 1.0             | 1.0             | 0.9375          | 0.979
+ 8 | 1.0             | 1.0             | 1.0             | 1.0
+
+From the table, we see that M=8 was an optimal choice that consistently allowed the model to classify all speakers correctly. As we decreased the number of components, the average accuracy also decreased, though only a little. This shows that the value of M has limited effect on the test accuracy of identifying speakers.
+
+I also tested the effect of the number of max iterations on the testing accuracy:
+
+ maxIter | Test Accuracy 1 | Test Accuracy 2 | Test Accuracy 3 | Average 
+---------|-----------------|-----------------|-----------------|---------
+   5     | 0.96875         | 1.0             | 0.96875         | 0.979
+   10    | 1.0             | 1.0             | 1.0             | 1.0
+   15    | 1.0             | 1.0             | 0.96875         | 0.990
+   20    | 1.0             | 1.0             | 1.0             | 1.0
+
+From the table, we observe that a small number of max iterations is enough for the GMM model to achieve perfect accuracy on the test set. For maxIter=5, the model already has very good performance. Hence we can conclude that the number of max iterations does not affect the speaker identification too much. For maxIter=15 where the average accuracy dropped, I believe it was a randomness issue at that round.
+
+- How might you improve the classification accuracy of the Gaussian mixtures, without adding more training data?
+
+Answer: From the above experiment, I think the GMM model is very capable of correctly identifying speakers from MFCC. Therefore, without adding more training data, I think we can play around with the hyperparameters, especially the number of components in the model, and we would be able to achieve pretty good results. From the experiment, it seems like the more the components, the better the classification accuracy.
+
+- When would your classifier decide that a given test utterance comes from none of the trained speaker models, and how would your classifier come to this decision?
+
+Answer: Given an input data, the GMM model computes its log-likelihood toward the model parameters and finds the most probable speaker by looking at the class with the highest log-likelihood. When a given test utterance comes from none of the trained speaker models, the log-likelihood for this utterance should be very low for all of the trained speaker models. Hence, we can determine a threshold that if the log-likelihood is lower than this threshold, we would claim the utterance to be from none of the trained speaker models.
+
+- Can you think of some alternative methods for doing speaker identification that don’t use Gaussian mixtures?
+
+Answer: Since the GMM works by basically computing the likelihood of a utterance belonging to a certain Gaussian component, I believe other probabilistic models work as well. For example, a Naive Bayes model might be suitable in this case. We can also design an RNN to learn the utterances and identify speakers accordingly.

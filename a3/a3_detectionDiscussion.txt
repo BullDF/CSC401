@@ -1,0 +1,13 @@
+
+I experimented several values of hidden_size and reported the final accuracy below. For training, it is the training accuracy at the last iteration of the last epoch. For validation, it is the validation accuracy at the last epoch. Other hyperparameters were kept as the default values defined in train.py.
+
+ hidden_size | Training | Validation | Test
+-------------|----------|------------|------
+     5       | 0.379    | 0.300      | 0.323
+     10      | 0.310    | 0.269      | 0.355
+     25      | 0.655    | 0.700      | 0.710
+     50      | 0.586    | 0.539      | 0.581
+     100     | 0.310    | 0.269      | 0.355
+     256     | 0.310    | 0.269      | 0.355
+
+From the above table, we notice that there was an initial increase in validation and test accuracy as we increased the size of the hidden layer from 5 to 25, where the peak of accuracy was found at hidden_size = 25. Nevertheless, as hidden_size kept increasing, the training, validation, and test accuracy all decreased, which was unexpected. To explain this, it might be because the data were only moderately complex and hence too many hidden units made optimization more difficult.
