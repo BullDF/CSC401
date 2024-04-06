@@ -1,0 +1,10 @@
+
+First of all, as the default setting, the DTW computation correctly identified that speaker 2 was the same person as the reference. Other speaker utterances had relatively larger distance than speaker 2, which was expected.
+
+For this part of the assignment, I experimented several changes in the setting. First, I tested my implementation of DTW by setting two loaded utterances from the same time frame and, as expected, the distance between them was 0, since they were basically the same utterance.
+
+I also tested two utterances but slightly shifted the time frame. For example, I chose the same utterance but the reference from 47-48 and one of the candidate from 47.1-48.1. Expectedly, this method returned that the two utterances were very similar (distance < 1000). This is because they were also basically the same recording and hence should be very closed to each other.
+
+Otherwise, I also noticed when the model made mistakes. For instance, I chose the 0th utterance from S-22B, and kept others the same (especially, speaker 2 was S-24D/0.mfcc and speaker 4 was S-22B/4.mfcc). Then the model should predict that speaker 4 was closer to the reference. However, the results showed that speaker 2 had a distance of 2430.1649 with the reference while speaker 4 was 3052.4794. This is probably because S-24D and S-22B were very similar speakers and so the model was confused by the two.
+
+Overall, I think the model did a decent job on speaker identification.
