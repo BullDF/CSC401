@@ -300,7 +300,7 @@ if __name__ == "__main__":
 
     trainThetas = []
     testMFCCs = []
-    print("TODO: you will need to modify this main block for Sec 2.3")
+    # print("TODO: you will need to modify this main block for Sec 2.3")
     d = 13
     k = 5  # number of top speakers to display, <= 0 if none
     M = 8
@@ -310,7 +310,7 @@ if __name__ == "__main__":
 
     for subdir, dirs, files in os.walk(dataDir):
         for speaker in dirs:
-            # print(speaker)
+            print(speaker)
 
             files = fnmatch.filter(os.listdir(os.path.join(dataDir, speaker)), "*npy")
             random.shuffle(files)
