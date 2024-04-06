@@ -220,9 +220,10 @@ def update_parameters(myTheta: theta, X: np.ndarray) -> float:
     L = logLik(log_Bs, myTheta)
     T = log_Bs.shape[1]
     Ps = np.exp(log_Ps)
-    new_omega = np.sum(Ps, axis=1) / T
-    new_mu = (Ps @ X) / np.sum(Ps, axis=1).reshape((-1, 1))
-    new_Sigma = (Ps @ (X ** 2)) / np.sum(Ps, axis=1).reshape((-1, 1)) - new_mu ** 2
+    sum_Ps = np.sum(Ps, axis=1) + 1e-10
+    new_omega = sum_Ps / T
+    new_mu = (Ps @ X) / sum_Ps.reshape((-1, 1))
+    new_Sigma = (Ps @ (X ** 2)) / sum_Ps.reshape((-1, 1)) - new_mu ** 2
     myTheta.reset_omega(new_omega)
     myTheta.reset_mu(new_mu)
     myTheta.reset_Sigma(new_Sigma + 1e-10)
@@ -309,7 +310,7 @@ if __name__ == "__main__":
 
     for subdir, dirs, files in os.walk(dataDir):
         for speaker in dirs:
-            print(speaker)
+            # print(speaker)
 
             files = fnmatch.filter(os.listdir(os.path.join(dataDir, speaker)), "*npy")
             random.shuffle(files)
